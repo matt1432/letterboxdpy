@@ -1,3 +1,4 @@
+import json
 import random
 import time
 from typing import ClassVar
@@ -16,6 +17,25 @@ from letterboxdpy.core.exceptions import (
     ResourceNotFoundError,
 )
 from letterboxdpy.utils.utils_file import JsonFile
+
+
+def flaresolverr_get(
+    session: requests.Session,
+    url: str,
+    flaresolverr_url: str,
+) -> str:
+    data = {
+        "cmd": "request.get",
+        "url": url,
+        "maxTimeout": 60000,  # 60 seconds
+    }
+    response = session.post(
+        flaresolverr_url,
+        data=json.dumps(data),
+        headers={"Content-Type": "application/json"},
+    )
+    result = response.json()
+    return result["solution"]["response"]
 
 
 class Scraper:
@@ -73,9 +93,17 @@ class Scraper:
     @classmethod
     def get_page(cls, url: str) -> BeautifulSoup:
         """Fetch, check, and parse the HTML content from the specified URL."""
-        response = cls._fetch(url)
-        cls._check_for_errors(url, response)
-        return cls._parse_html(response)
+        # FIXME: allow specifying flaresolverr url and try without first
+        response_text = flaresolverr_get(cls.instance(), url, flaresolverr_url="http://localhost:8191/v1")
+        soup = BeautifulSoup(response_text, cls.builder)
+        # Attach the final URL after all redirections.
+        # This allows downstream page classes (like MovieProfile) to resolve
+        # the canonical slug from an external ID in a single network request.
+        soup.final_url = url
+        return soup
+        # response = cls._fetch(url)
+        # cls._check_for_errors(url, response)
+        # return cls._parse_html(response)
 
     @classmethod
     def _fetch(cls, url: str) -> requests.Response:

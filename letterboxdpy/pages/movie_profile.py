@@ -123,6 +123,9 @@ class MovieProfile:
 def extract_movie_id(dom):
     """Extract movie ID from DOM."""
     elem = dom.find("span", "block-flag-wrapper")
+    # FIXME: with flaresolverr the element cannot be found
+    if elem is None:
+        return ""
     elem = elem.find("a")
     # join=True: extracts and joins all digits (e.g. data-report-url)
     return extract_number_from_text(elem.get("data-report-url"), join=True)
